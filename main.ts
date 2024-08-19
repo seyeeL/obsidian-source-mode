@@ -30,6 +30,17 @@ export default class MarkdownSourceViewPlugin extends Plugin {
             const view = this.app.workspace.getActiveViewOfType(MarkdownView)
             if (view) {
               this.handleState(view.leaf, isSourceView)
+
+              // Add or remove 'is-source-mode' class
+              const contentEl = view.contentEl
+              const markdownViewEl = contentEl.querySelector('.markdown-source-view')
+              if (markdownViewEl) {
+                if (isSourceView) {
+                  markdownViewEl.classList.add('is-source-mode')
+                } else {
+                  markdownViewEl.classList.remove('is-source-mode')
+                }
+              }
             }
           })
         }
