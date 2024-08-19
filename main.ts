@@ -1,4 +1,4 @@
-import { Plugin, TFile, Notice, MenuItem, MarkdownView } from 'obsidian'
+import { Plugin, TFile, Notice, MenuItem, MarkdownView, WorkspaceLeaf } from 'obsidian'
 
 export default class MarkdownSourceViewPlugin extends Plugin {
   sourceViewPaths: string[] = []
@@ -24,18 +24,15 @@ export default class MarkdownSourceViewPlugin extends Plugin {
     // Handle file open to check if it should be opened in source view
     this.registerEvent(
       this.app.workspace.on('file-open', (file: TFile | null) => {
-        setImmediate(() => {
-          console.log('file-open', file, file ? this.sourceViewPaths.includes(file.path) : false)
-
-          const view = this.app.workspace.getActiveViewOfType(MarkdownView)
-          // console.log('file-view', view, view ? view.getMode() : false)
-
-          if (view && file && this.sourceViewPaths.includes(file.path)) {
-            view.editMode.sourceMode = true
-          } else {
-            view.editMode.sourceMode = false
-          }
-        })
+        if (file && file.extension === 'md') {
+          setImmediate(() => {
+            const isSourceView = this.sourceViewPaths.includes(file.path)
+            const view = this.app.workspace.getActiveViewOfType(MarkdownView)
+            if (view) {
+              this.handleState(view.leaf, isSourceView)
+            }
+          })
+        }
       })
     )
 
@@ -79,21 +76,18 @@ export default class MarkdownSourceViewPlugin extends Plugin {
     // Get all markdown leaves
     const markdownLeaves = this.app.workspace.getLeavesOfType('markdown')
 
-    console.log('markdownLeaves', markdownLeaves)
-
     // Iterate through all markdown leaves
     markdownLeaves.forEach(leaf => {
       if (leaf.view instanceof MarkdownView && leaf.view.file === file) {
-        console.log('leaf', leaf.view.leaf, leaf.view.editMode.sourceMode)
-
-        const viewState = leaf.view.leaf.getViewState()
-        console.log('viewState', viewState)
-
-        viewState.state.mode = 'source'
-        viewState.state.source = !isSourceView
-        leaf.view.leaf.setViewState(viewState)
-        console.log('viewState', leaf.view.leaf)
+        this.handleState(leaf, !isSourceView)
       }
     })
+  }
+
+  handleState(leaf: WorkspaceLeaf, sourceStatus: boolean) {
+    const viewState = leaf.getViewState()
+    viewState.state.mode = 'source'
+    viewState.state.source = sourceStatus
+    leaf.setViewState(viewState)
   }
 }
